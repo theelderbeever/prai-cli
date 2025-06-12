@@ -1,5 +1,9 @@
+use anyhow::Result;
 use clap::Parser;
-use reqwest::header::{CONTENT_TYPE, HeaderMap, HeaderValue};
+use reqwest::{
+    blocking::Client,
+    header::{CONTENT_TYPE, HeaderMap, HeaderValue},
+};
 use serde_json::json;
 use std::process::Command;
 
@@ -21,17 +25,14 @@ struct Args {
     api_key: String,
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<()> {
     let args = Args::parse();
 
     // Generate git diff
     let diff = get_git_diff(&args.base, &args.head, &args.exclude)?;
 
-    println!("{diff}");
-
     if diff.trim().is_empty() {
-        println!(
+        eprintln!(
             "No differences found between {} and {}",
             args.base, args.head
         );
@@ -39,36 +40,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Generate PR description using Anthropic API
-    let description = generate_pr_description(&diff, &args.api_key).await?;
+    let description = generate_pr_description(&diff, &args.api_key)?;
 
     println!("{}", description);
 
     Ok(())
 }
 
-fn get_git_diff(
-    base: &str,
-    head: &str,
-    exclude: &str,
-) -> Result<String, Box<dyn std::error::Error>> {
-    println!("{exclude}");
+fn get_git_diff(base: &str, head: &str, exclude: &str) -> Result<String> {
     let output = Command::new("git")
         .args(["diff", base, head, "--", exclude])
         .output()?;
 
     if !output.status.success() {
         let error = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Git diff failed: {}", error).into());
+        anyhow::bail!("Git diff failed: {}", error);
     }
 
     Ok(String::from_utf8(output.stdout)?)
 }
 
-async fn generate_pr_description(
-    diff: &str,
-    api_key: &str,
-) -> Result<String, Box<dyn std::error::Error>> {
-    let client = reqwest::Client::new();
+fn generate_pr_description(diff: &str, api_key: &str) -> Result<String> {
+    let client = Client::new();
     let mut headers = HeaderMap::new();
     headers.insert("x-api-key", HeaderValue::from_str(api_key).unwrap());
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
@@ -100,19 +93,18 @@ async fn generate_pr_description(
         .headers(headers)
         // .bearer_auth(api_key)
         .json(&request_body)
-        .send()
-        .await?;
+        .send()?;
 
     if !response.status().is_success() {
-        let error_text = response.text().await?;
-        return Err(format!("API request failed: {}", error_text).into());
+        let error_text = response.text()?;
+        anyhow::bail!("API request failed: {}", error_text);
     }
 
-    let response_json: serde_json::Value = response.json().await?;
+    let response_json: serde_json::Value = response.json()?;
 
     let content = response_json["content"][0]["text"]
         .as_str()
-        .ok_or("Invalid API response format")?;
+        .ok_or_else(|| anyhow::anyhow!("Invalid API response format"))?;
 
     Ok(content.to_string())
 }
