@@ -8,7 +8,7 @@ use serde_json::json;
 use std::process::Command;
 
 #[derive(Parser)]
-#[command(name = "git-pr-desc")]
+#[command(name = "prai")]
 #[command(about = "Generate PR descriptions from git diffs using Anthropic's API")]
 struct Args {
     /// Base commit hash
