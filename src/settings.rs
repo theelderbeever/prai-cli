@@ -1,10 +1,47 @@
+use std::path::Path;
+
+use anyhow::{Result, anyhow};
+use config::{ConfigBuilder, FileFormat, builder::DefaultState};
 use serde::{Deserialize, Serialize};
+
+type DefaultConfigBuilder = ConfigBuilder<DefaultState>;
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Settings {
+    pub default: String,
+    #[serde(rename = "profile")]
+    profiles: Vec<Profile>,
+}
+
+impl Settings {
+    pub fn get(self, profile: Option<String>) -> Result<Profile> {
+        let name = profile.unwrap_or(self.default);
+
+        self.profiles
+            .into_iter()
+            .find(|p| p.name.eq(&name))
+            .ok_or(anyhow!("Unable to find profile `{name}`"))
+    }
+    pub fn from_path(path: &Path) -> anyhow::Result<Self> {
+        Ok(Self::builder(path)?.build()?.try_deserialize()?)
+    }
+    pub fn builder(path: &Path) -> anyhow::Result<DefaultConfigBuilder> {
+        Ok(config::Config::builder()
+            .add_source(config::File::new(path.to_str().unwrap(), FileFormat::Toml))
+            .add_source(
+                config::Environment::default()
+                    .prefix("PRAI")
+                    .prefix_separator("__")
+                    .separator("__"),
+            ))
+    }
+}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Profile {
     pub name: String,
     pub role: Option<String>,
-    pub prompt: Option<String>,
+    pub directive: Option<String>,
     #[serde(flatten)]
     pub provider: Provider,
 }
