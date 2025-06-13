@@ -3,15 +3,9 @@ use std::path::PathBuf;
 use anyhow::Result;
 use clap::Parser;
 use lazy_static::lazy_static;
-use log::{debug, info, trace, warn};
-use reqwest::{
-    blocking::Client,
-    header::{CONTENT_TYPE, HeaderMap, HeaderValue},
-};
-use serde_json::json;
+use log::{debug, info};
 
 use prai::{
-    Prompt,
     providers::{Provider as _Provider, Request, ollama::OllamaProvider},
     settings::{Provider, Settings},
 };
@@ -31,7 +25,7 @@ fn default_config_string() -> &'static str {
 
 #[derive(Parser)]
 #[command(name = "prai")]
-#[command(about = "Generate PR descriptions from git diffs using Anthropic's API")]
+#[command(about = "Generate PR descriptions from git diffs using configurable AI providers")]
 struct Args {
     #[arg(default_value = "HEAD")]
     commit1: String,
@@ -39,10 +33,6 @@ struct Args {
 
     #[arg(short, long, default_value = ":!*.lock")]
     exclude: String,
-
-    /// Anthropic API key (or set ANTHROPIC_API_KEY env var)
-    #[arg(short, long, env = "ANTHROPIC_API_KEY")]
-    api_key: String,
 
     /// The provider profile to use for generation. Will default to the value in the config default.
     #[arg(short, long, global = true)]
@@ -104,61 +94,3 @@ fn main() -> Result<()> {
 
     Ok(())
 }
-
-// Generate PR description using Anthropic API
-
-// # Arguments
-// * `args` - CLI arguments containing commit hashes, exclude patterns, and API key
-// fn generate_pr_description(args: &Args) -> Result<String> {
-//     info!("Generating PR description using Anthropic API");
-
-//     let client = Client::new();
-//     let mut headers = HeaderMap::new();
-//     headers.insert("x-api-key", HeaderValue::from_str(&args.api_key).unwrap());
-//     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-//     headers.insert("anthropic-version", HeaderValue::from_static("2023-06-01"));
-
-//     debug!("Building prompt for git diff analysis");
-//     let prompt = Prompt::render(
-//         &args.commit1,
-//         args.commit2.as_deref(),
-//         &args.exclude,
-//         None,
-//         None,
-//     )?;
-
-//     trace!("Prompt content:\n{}", prompt);
-
-//     let request_body = json!({
-//         "model": "claude-3-sonnet-20240229",
-//         "max_tokens": 500,
-//         "messages": [{
-//             "role": "user",
-//             "content": prompt
-//         }]
-//     });
-
-//     debug!("Sending request to Anthropic API");
-//     let response = client
-//         .post("https://api.anthropic.com/v1/messages")
-//         .headers(headers)
-//         .json(&request_body)
-//         .send()?;
-
-//     let status = response.status();
-//     if !status.is_success() {
-//         let error_text = response.text()?;
-//         warn!("API request failed with status: {}", status);
-//         anyhow::bail!("API request failed: {}", error_text);
-//     }
-
-//     debug!("Parsing API response");
-//     let response_json: serde_json::Value = response.json()?;
-
-//     let content = response_json["content"][0]["text"]
-//         .as_str()
-//         .ok_or_else(|| anyhow::anyhow!("Invalid API response format"))?;
-
-//     info!("Successfully generated PR description");
-//     Ok(content.to_string())
-// }
