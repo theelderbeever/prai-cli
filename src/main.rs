@@ -46,7 +46,7 @@ struct Args {
     config: PathBuf,
 
     /// Generate a PR title instead of description
-    #[arg(long)]
+    #[arg(short = 'T', long)]
     title: bool,
 
     /// Verbose mode (-v, -vv, -vvv)
