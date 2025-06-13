@@ -34,7 +34,7 @@ struct Args {
     commit1: String,
 
     #[arg(default_value = "HEAD")]
-    commit2: Option<String>,
+    commit2: String,
 
     #[arg(short, long, default_value = ":!*.lock")]
     exclude: String,
@@ -86,7 +86,7 @@ fn main() -> Result<()> {
     let request = Request::builder()
         .base(args.commit1.clone())
         .exclude(args.exclude.clone())
-        .maybe_head(args.commit2.clone())
+        .head(args.commit2.clone())
         .maybe_role(profile.role.clone())
         .maybe_directive(profile.directive.clone())
         .is_title(args.title)

@@ -11,7 +11,7 @@ use log::trace;
 #[derive(Builder, Debug)]
 pub struct Request {
     pub base: String,
-    pub head: Option<String>,
+    pub head: String,
     pub exclude: String,
     pub role: Option<String>,
     pub directive: Option<String>,
@@ -27,7 +27,7 @@ pub trait Provider {
     fn build_prompt(&self, request: &Request) -> Result<String> {
         let prompt = prompt::Prompt::render(
             request.base.as_str(),
-            request.head.as_deref(),
+            request.head.as_str(),
             request.exclude.as_str(),
             request.role.as_deref(),
             request.directive.as_deref(),

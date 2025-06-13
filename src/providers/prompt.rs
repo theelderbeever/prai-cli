@@ -1,6 +1,6 @@
 use std::process::Command;
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use indoc::indoc;
 
 pub struct Prompt;
@@ -15,7 +15,7 @@ impl Prompt {
         Keep it under 150 words and use bullet points for clarity. Don't include implementation details unless critical.
         Don't unclude your own thought process. The output should be just the content of the PR summary."#
     };
-    
+
     pub const DEFAULT_TITLE_DIRECTIVE: &str = indoc! {
         r#"Analyze this git diff and generate a concise PR title. The title should:
         - Be 50 characters or less
@@ -26,7 +26,7 @@ impl Prompt {
     };
     pub fn render(
         base: &str,
-        head: Option<&str>,
+        head: &str,
         exclude: &str,
         role: Option<&str>,
         directive: Option<&str>,
@@ -37,7 +37,7 @@ impl Prompt {
         } else {
             Self::DEFAULT_DIRECTIVE
         };
-        
+
         Ok(format!(
             indoc! {"[CONTEXT]
             {diff}
@@ -51,14 +51,10 @@ impl Prompt {
         ))
     }
 
-    fn get_git_diff(base: &str, head: Option<&str>, exclude: &str) -> Result<String> {
+    fn get_git_diff(base: &str, head: &str, exclude: &str) -> Result<String> {
         let mut cmd = Command::new("git");
 
-        cmd.arg("diff").arg(base);
-
-        if let Some(head) = head {
-            cmd.arg(head);
-        }
+        cmd.arg("diff").arg(base).arg(head);
 
         let output = cmd.args(["--", exclude]).output()?;
 
@@ -67,7 +63,13 @@ impl Prompt {
             anyhow::bail!("Git diff failed: {}", error);
         }
 
-        Ok(String::from_utf8(output.stdout)?)
+        let diff = String::from_utf8(output.stdout)?;
+
+        if diff.is_empty() {
+            return Err(anyhow!("No differences between `{base}` and `{head}`"));
+        }
+
+        Ok(diff)
     }
 }
 
@@ -81,7 +83,7 @@ mod tests {
 
     #[test]
     fn test_prompt() {
-        let prompt = Prompt::render("683ddd6", Some("d2bbcc5"), ":!*.lock", None, None, false)
+        let prompt = Prompt::render("683ddd6", "d2bbcc5", ":!*.lock", None, None, false)
             .unwrap()
             .replace(" \n", "\n");
 
