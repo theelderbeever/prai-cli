@@ -30,8 +30,10 @@ fn default_config_string() -> &'static str {
 #[command(name = "prai")]
 #[command(about = "Generate PR descriptions from git diffs using configurable AI providers")]
 struct Args {
-    #[arg(default_value = "HEAD")]
+    #[arg(default_value = prai::git::get_default_branch())]
     commit1: String,
+
+    #[arg(default_value = "HEAD")]
     commit2: Option<String>,
 
     #[arg(short, long, default_value = ":!*.lock")]
