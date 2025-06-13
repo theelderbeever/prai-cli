@@ -6,7 +6,7 @@ use indoc::indoc;
 pub struct Prompt;
 
 impl Prompt {
-    pub const DEFAULT_ROLE: &str = "You are a senior Rust engineer";
+    pub const DEFAULT_ROLE: &str = "You are a senior engineer";
     pub const DEFAULT_DIRECTIVE: &str = indoc! {
         r#"Analyze this git diff and create a concise PR description. Focus on:
         - What changes were made (be specific but brief)
