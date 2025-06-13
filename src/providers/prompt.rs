@@ -1,27 +1,37 @@
 use std::process::Command;
 
 use anyhow::Result;
-use bon::Builder;
 use indoc::indoc;
 
-#[derive(Builder)]
-pub struct Prompt {
-    role: String,
-    prompt: String,
-}
+pub struct Prompt;
 
 impl Prompt {
-    pub fn render(self, base: &str, head: Option<&str>, exclude: &str) -> Result<String> {
+    pub const DEFAULT_ROLE: &str = "You are a senior Rust engineer";
+    pub const DEFAULT_DIRECTIVE: &str = indoc! {
+        r#"Analyze this git diff and create a concise PR description. Focus on:
+        - What changes were made (be specific but brief)
+        - Why these changes matter
+        - Any breaking changes or important notes
+        Keep it under 150 words and use bullet points for clarity. Don't include implementation details unless critical.
+        Don't unclude your own thought process. The output should be just the content of the PR summary."#
+    };
+    pub fn render(
+        base: &str,
+        head: Option<&str>,
+        exclude: &str,
+        role: Option<&str>,
+        directive: Option<&str>,
+    ) -> Result<String> {
         Ok(format!(
             indoc! {"[CONTEXT]
             {diff}
             [ROLE]
             {role}
             [DIRECTIVE]
-            {prompt}"},
+            {directive}"},
             diff = Self::get_git_diff(base, head, exclude)?,
-            role = self.role,
-            prompt = self.prompt
+            role = role.unwrap_or(Self::DEFAULT_ROLE),
+            directive = directive.unwrap_or(Self::DEFAULT_DIRECTIVE)
         ))
     }
 
@@ -55,16 +65,9 @@ mod tests {
 
     #[test]
     fn test_prompt() {
-        let prompt = Prompt::builder()
-            .role("You are a senior Rust engineer".to_string())
-            .prompt(indoc!{
-                r#"Analyze this git diff and create a concise PR description. Focus on:
-                - What changes were made (be specific but brief)
-                - Why these changes matter
-                - Any breaking changes or important notes
-                Keep it under 150 words and use bullet points for clarity. Don't include implementation details unless critical."#
-            }.to_string()
-            ).build().render("683ddd6", Some("d2bbcc5"), ":!*.lock").unwrap().replace(" \n", "\n");
+        let prompt = Prompt::render("683ddd6", Some("d2bbcc5"), ":!*.lock", None, None)
+            .unwrap()
+            .replace(" \n", "\n");
 
         assert_str_eq!(EXPECTED, prompt.as_str());
     }
@@ -144,9 +147,6 @@ mod tests {
                  .send()
                  .await?;
 
-        [COMMITS]
-        d2bbcc5 Add exclusions option
-
         [ROLE]
         You are a senior Rust engineer
         [DIRECTIVE]
@@ -154,6 +154,7 @@ mod tests {
         - What changes were made (be specific but brief)
         - Why these changes matter
         - Any breaking changes or important notes
-        Keep it under 150 words and use bullet points for clarity. Don't include implementation details unless critical."#
+        Keep it under 150 words and use bullet points for clarity. Don't include implementation details unless critical.
+        Don't unclude your own thought process. The output should be just the content of the PR summary."#
     };
 }

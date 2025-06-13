@@ -8,6 +8,8 @@ use reqwest::{
 };
 use serde_json::json;
 
+use prai::Prompt;
+
 #[derive(Parser)]
 #[command(name = "prai")]
 #[command(about = "Generate PR descriptions from git diffs using Anthropic's API")]
@@ -72,17 +74,13 @@ fn generate_pr_description(args: &Args) -> Result<String> {
     headers.insert("anthropic-version", HeaderValue::from_static("2023-06-01"));
 
     debug!("Building prompt for git diff analysis");
-    let prompt = prai::Prompt::builder()
-        .role("You are a senior Rust engineer".to_string())
-        .prompt(indoc!{
-            r#"Analyze this git diff and create a concise PR description. Focus on:
-            - What changes were made (be specific but brief)
-            - Why these changes matter
-            - Any breaking changes or important notes
-            Keep it under 150 words and use bullet points for clarity. Don't include implementation details unless critical.
-            Don't unclude your own thought process. The output should be just the content of the PR summary."#
-        }.to_string()
-        ).build().render(&args.commit1, args.commit2.as_deref(), &args.exclude)?;
+    let prompt = prai::Prompt::render(
+        &args.commit1,
+        args.commit2.as_deref(),
+        &args.exclude,
+        None,
+        None,
+    )?;
 
     trace!("Prompt content:\n{}", prompt);
 
