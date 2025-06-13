@@ -45,6 +45,10 @@ struct Args {
     #[arg(short = 'f', long = "config", global = true, default_value = default_config_string())]
     config: PathBuf,
 
+    /// Generate a PR title instead of description
+    #[arg(long)]
+    title: bool,
+
     /// Verbose mode (-v, -vv, -vvv)
     #[arg(short, action = clap::ArgAction::Count)]
     verbose: u8,
@@ -83,6 +87,7 @@ fn main() -> Result<()> {
         .maybe_head(args.commit2.clone())
         .maybe_role(profile.role.clone())
         .maybe_directive(profile.directive.clone())
+        .is_title(args.title)
         .build();
 
     let description = match profile.provider {
