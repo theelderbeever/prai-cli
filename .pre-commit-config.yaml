@@ -1,0 +1,27 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      # - id: check-yaml
+      - id: end-of-file-fixer
+        stages: [pre-commit]
+      - id: trailing-whitespace
+        stages: [pre-commit]
+  - repo: https://github.com/doublify/pre-commit-rust
+    rev: v1.0
+    hooks:
+      - id: fmt
+        stages: [pre-commit]
+        # args: [--all]
+      - id: clippy
+        stages: [pre-commit]
+        args: [--all-targets, --, -D, clippy::all]
+  - repo: local
+    hooks:
+      - id: cargo-test
+        name: Run cargo test
+        entry: cargo test --all --
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+        types: [rust]

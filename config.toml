@@ -1,0 +1,40 @@
+default = "ollama"
+
+[[profile]]
+name = "claude"
+# template = ".github/PULL_REQUEST_TEMPLATE/pull_request_template.md"
+provider = "anthropic"
+version = "2023-06-01"
+model = "claude-3-sonnet-20240229"
+api_key = "${ANTHROPIC_API_KEY}"
+max_tokens = 500
+temperature = 0.3
+top_p = 0.9
+
+[[profile]]
+name = "ollama"
+provider = "ollama"
+url = "http://localhost:11434"
+model = "gemma3:1b"
+
+[[profile]]
+name = "openai"
+provider = "openai"
+model = "gpt-4"
+api_key = "${OPENAI_API_KEY}"
+base_url = "https://api.openai.com/v1"
+max_tokens = 500
+temperature = 0.3
+top_p = 0.9
+frequency_penalty = 0.0
+presence_penalty = 0.0
+
+[[profile]]
+name = "gemini"
+provider = "google"
+model = "gemini-pro"
+api_key = "${GOOGLE_API_KEY}"
+base_url = "https://generativelanguage.googleapis.com/v1beta"
+max_tokens = 500
+temperature = 0.3
+top_p = 0.9
