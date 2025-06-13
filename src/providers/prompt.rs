@@ -15,13 +15,29 @@ impl Prompt {
         Keep it under 150 words and use bullet points for clarity. Don't include implementation details unless critical.
         Don't unclude your own thought process. The output should be just the content of the PR summary."#
     };
+    
+    pub const DEFAULT_TITLE_DIRECTIVE: &str = indoc! {
+        r#"Analyze this git diff and generate a concise PR title. The title should:
+        - Be 50 characters or less
+        - Use imperative mood (e.g., "Add feature" not "Added feature")
+        - Be specific but concise about the main change
+        - Not include punctuation at the end
+        Don't include your own thought process. The output should be just the PR title."#
+    };
     pub fn render(
         base: &str,
         head: Option<&str>,
         exclude: &str,
         role: Option<&str>,
         directive: Option<&str>,
+        is_title: bool,
     ) -> Result<String> {
+        let default_directive = if is_title {
+            Self::DEFAULT_TITLE_DIRECTIVE
+        } else {
+            Self::DEFAULT_DIRECTIVE
+        };
+        
         Ok(format!(
             indoc! {"[CONTEXT]
             {diff}
@@ -31,7 +47,7 @@ impl Prompt {
             {directive}"},
             diff = Self::get_git_diff(base, head, exclude)?,
             role = role.unwrap_or(Self::DEFAULT_ROLE),
-            directive = directive.unwrap_or(Self::DEFAULT_DIRECTIVE)
+            directive = directive.unwrap_or(default_directive)
         ))
     }
 
@@ -65,7 +81,7 @@ mod tests {
 
     #[test]
     fn test_prompt() {
-        let prompt = Prompt::render("683ddd6", Some("d2bbcc5"), ":!*.lock", None, None)
+        let prompt = Prompt::render("683ddd6", Some("d2bbcc5"), ":!*.lock", None, None, false)
             .unwrap()
             .replace(" \n", "\n");
 
@@ -148,7 +164,7 @@ mod tests {
                  .await?;
 
         [ROLE]
-        You are a senior Rust engineer
+        You are a senior engineer
         [DIRECTIVE]
         Analyze this git diff and create a concise PR description. Focus on:
         - What changes were made (be specific but brief)

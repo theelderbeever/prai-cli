@@ -15,6 +15,7 @@ pub struct Request {
     pub exclude: String,
     pub role: Option<String>,
     pub directive: Option<String>,
+    pub is_title: bool,
 }
 
 pub trait Provider {
@@ -30,6 +31,7 @@ pub trait Provider {
             request.exclude.as_str(),
             request.role.as_deref(),
             request.directive.as_deref(),
+            request.is_title,
         )?;
         trace!("Prompt:\n{prompt}");
         Ok(prompt)
