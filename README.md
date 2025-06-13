@@ -1,6 +1,6 @@
 # prai - AI-Powered PR Description Generator
 
-A command-line tool that generates concise pull request descriptions from git diffs using Anthropic's Claude AI.
+A command-line tool that generates concise pull request descriptions from git diffs using configurable AI providers.
 
 ## Overview
 
@@ -27,17 +27,61 @@ cd prai-cli/prai
 cargo install --path .
 ```
 
-## Setup
+## Configuration
 
-You'll need an Anthropic API key to use this tool. Get one from [Anthropic's Console](https://console.anthropic.com/).
+`prai` supports multiple AI providers through a configuration file. The tool looks for a config file at:
 
-Set your API key as an environment variable:
+1. `~/.config/prai/config.toml` (default location)
+2. Path specified by `PRAI_HOME` environment variable + `/config.toml`
+3. `./config.toml` (current directory)
 
-```bash
-export ANTHROPIC_API_KEY="your-api-key-here"
+### Supported Providers
+
+- **Anthropic Claude** - Requires API key from [Anthropic's Console](https://console.anthropic.com/)
+- **OpenAI GPT** - Requires API key from [OpenAI](https://platform.openai.com/)
+- **Google Gemini** - Requires API key from [Google AI Studio](https://makersuite.google.com/)
+- **Ollama** - For local models (requires Ollama running locally)
+
+### Sample Configuration
+
+Create `~/.config/prai/config.toml` with your preferred providers:
+
+```toml
+default = "claude"
+
+[[profile]]
+name = "claude"
+provider = "anthropic"
+version = "2023-06-01"
+model = "claude-3-sonnet-20240229"
+api_key = "your-anthropic-api-key"
+max_tokens = 500
+temperature = 0.3
+
+[[profile]]
+name = "gpt4"
+provider = "openai"
+model = "gpt-4"
+api_key = "your-openai-api-key"
+base_url = "https://api.openai.com/v1"
+max_tokens = 500
+temperature = 0.3
+
+[[profile]]
+name = "ollama"
+provider = "ollama"
+url = "http://localhost:11434"
+model = "codegemma:7b"
+
+[[profile]]
+name = "gemini"
+provider = "google"
+model = "gemini-pro"
+api_key = "your-google-api-key"
+base_url = "https://generativelanguage.googleapis.com/v1beta"
+max_tokens = 500
+temperature = 0.3
 ```
-
-Or pass it directly via the `--api-key` flag.
 
 ## Usage
 
@@ -50,7 +94,8 @@ prai <base-commit> <head-commit> [OPTIONS]
 ### Options
 
 - `--exclude, -e`: Files to exclude from diff (default: `:!*.lock`)
-- `--api-key, -a`: Anthropic API key (or use `ANTHROPIC_API_KEY` env var)
+- `--profile, -p`: Provider profile to use (defaults to config default)
+- `--config, -f`: Path to config file (defaults to `~/.config/prai/config.toml`)
 
 ### Examples
 
@@ -69,9 +114,14 @@ Exclude additional files:
 prai main HEAD --exclude ":!*.lock :!dist/"
 ```
 
-Pass API key directly:
+Use a specific profile:
 ```bash
-prai main HEAD --api-key sk-ant-...
+prai main HEAD --profile gpt4
+```
+
+Use a custom config file:
+```bash
+prai main HEAD --config /path/to/custom/config.toml
 ```
 
 ## Sample Output
@@ -95,12 +145,12 @@ prai main HEAD --api-key sk-ant-...
 
 - Git (for generating diffs)
 - Rust 1.70+ (for installation)
-- Anthropic API key
+- API key for your chosen provider (Anthropic, OpenAI, Google) or Ollama running locally
 
 ## TODO
 
-- [ ] Support for additional model providers (OpenAI, Google, Ollama, etc.)
 - [ ] Configurable prompt templates
+- [ ] Additional output formats (JSON, Markdown templates)
 
 ## License
 

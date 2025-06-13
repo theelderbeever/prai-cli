@@ -1,110 +1,110 @@
+use std::path::PathBuf;
+
 use anyhow::Result;
 use clap::Parser;
-use reqwest::{
-    blocking::Client,
-    header::{CONTENT_TYPE, HeaderMap, HeaderValue},
+use lazy_static::lazy_static;
+use log::{debug, info};
+
+use prai::{
+    providers::{
+        Provider as _Provider, Request, anthropic::AnthropicProvider, google::GoogleProvider,
+        ollama::OllamaProvider, openai::OpenAIProvider,
+    },
+    settings::{Provider, Settings},
 };
-use serde_json::json;
-use std::process::Command;
+
+fn default_config_string() -> &'static str {
+    lazy_static! {
+        static ref DEFAULT_PATH_STR: String = std::env::var("PRAI_HOME")
+            .ok()
+            .map(|s| PathBuf::from(s).join("config.toml"))
+            .or(dirs::home_dir().map(|p| p.join(".config/prai/config.toml")))
+            .map_or(String::from("./config.toml"), |p| p
+                .to_string_lossy()
+                .to_string());
+    }
+    &DEFAULT_PATH_STR
+}
 
 #[derive(Parser)]
 #[command(name = "prai")]
-#[command(about = "Generate PR descriptions from git diffs using Anthropic's API")]
+#[command(about = "Generate PR descriptions from git diffs using configurable AI providers")]
 struct Args {
-    /// Base commit hash
-    base: String,
-
-    /// Head commit hash
-    head: String,
+    #[arg(default_value = "HEAD")]
+    commit1: String,
+    commit2: Option<String>,
 
     #[arg(short, long, default_value = ":!*.lock")]
     exclude: String,
 
-    /// Anthropic API key (or set ANTHROPIC_API_KEY env var)
-    #[arg(short, long, env = "ANTHROPIC_API_KEY")]
-    api_key: String,
+    /// The provider profile to use for generation. Will default to the value in the config default.
+    #[arg(short, long, global = true)]
+    profile: Option<String>,
+
+    /// Path to config file for sourcing providers
+    #[arg(short = 'f', long = "config", global = true, default_value = default_config_string())]
+    config: PathBuf,
+
+    /// Verbose mode (-v, -vv, -vvv)
+    #[arg(short, action = clap::ArgAction::Count)]
+    verbose: u8,
 }
+
+impl Args {}
 
 fn main() -> Result<()> {
     let args = Args::parse();
 
-    // Generate git diff
-    let diff = get_git_diff(&args.base, &args.head, &args.exclude)?;
+    // Initialize logging based on verbosity level
+    let log_level = match args.verbose {
+        0 => log::LevelFilter::Warn,
+        1 => log::LevelFilter::Info,
+        2 => log::LevelFilter::Debug,
+        _ => log::LevelFilter::Trace,
+    };
 
-    if diff.trim().is_empty() {
-        eprintln!(
-            "No differences found between {} and {}",
-            args.base, args.head
-        );
-        return Ok(());
-    }
+    env_logger::Builder::from_default_env()
+        .filter_level(log_level)
+        .init();
 
-    // Generate PR description using Anthropic API
-    let description = generate_pr_description(&diff, &args.api_key)?;
+    info!("Starting prai with verbosity level: {}", args.verbose);
+    debug!(
+        "Using commit1: {}, commit2: {:?}",
+        args.commit1, args.commit2
+    );
+    debug!("Exclude pattern: {}", args.exclude);
+
+    let settings = Settings::from_path(&args.config)?;
+    let profile = settings.get(args.profile.clone())?;
+
+    let request = Request::builder()
+        .base(args.commit1.clone())
+        .exclude(args.exclude.clone())
+        .maybe_head(args.commit2.clone())
+        .maybe_role(profile.role.clone())
+        .maybe_directive(profile.directive.clone())
+        .build();
+
+    let description = match profile.provider {
+        Provider::Ollama(config) => {
+            let provider = OllamaProvider::from_config(config);
+            provider.make_request(request)
+        }
+        Provider::Anthropic(config) => {
+            let provider = AnthropicProvider::from_config(config);
+            provider.make_request(request)
+        }
+        Provider::OpenAI(config) => {
+            let provider = OpenAIProvider::from_config(config);
+            provider.make_request(request)
+        }
+        Provider::Google(config) => {
+            let provider = GoogleProvider::from_config(config);
+            provider.make_request(request)
+        }
+    }?;
 
     println!("{}", description);
 
     Ok(())
-}
-
-fn get_git_diff(base: &str, head: &str, exclude: &str) -> Result<String> {
-    let output = Command::new("git")
-        .args(["diff", base, head, "--", exclude])
-        .output()?;
-
-    if !output.status.success() {
-        let error = String::from_utf8_lossy(&output.stderr);
-        anyhow::bail!("Git diff failed: {}", error);
-    }
-
-    Ok(String::from_utf8(output.stdout)?)
-}
-
-fn generate_pr_description(diff: &str, api_key: &str) -> Result<String> {
-    let client = Client::new();
-    let mut headers = HeaderMap::new();
-    headers.insert("x-api-key", HeaderValue::from_str(api_key).unwrap());
-    headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-    headers.insert("anthropic-version", HeaderValue::from_static("2023-06-01"));
-
-    let prompt = format!(
-        "Analyze this git diff and create a concise PR description. Focus on:\n\
-        - What changes were made (be specific but brief)\n\
-        - Why these changes matter\n\
-        - Any breaking changes or important notes\n\
-        \n\
-        Keep it under 150 words and use bullet points for clarity. Don't include implementation details unless critical.\n\
-        \n\
-        Git diff:\n```\n{}\n```",
-        diff
-    );
-
-    let request_body = json!({
-        "model": "claude-3-sonnet-20240229",
-        "max_tokens": 500,
-        "messages": [{
-            "role": "user",
-            "content": prompt
-        }]
-    });
-
-    let response = client
-        .post("https://api.anthropic.com/v1/messages")
-        .headers(headers)
-        // .bearer_auth(api_key)
-        .json(&request_body)
-        .send()?;
-
-    if !response.status().is_success() {
-        let error_text = response.text()?;
-        anyhow::bail!("API request failed: {}", error_text);
-    }
-
-    let response_json: serde_json::Value = response.json()?;
-
-    let content = response_json["content"][0]["text"]
-        .as_str()
-        .ok_or_else(|| anyhow::anyhow!("Invalid API response format"))?;
-
-    Ok(content.to_string())
 }
