@@ -6,7 +6,10 @@ use lazy_static::lazy_static;
 use log::{debug, info};
 
 use prai::{
-    providers::{Provider as _Provider, Request, ollama::OllamaProvider},
+    providers::{
+        Provider as _Provider, Request, anthropic::AnthropicProvider, google::GoogleProvider,
+        ollama::OllamaProvider, openai::OpenAIProvider,
+    },
     settings::{Provider, Settings},
 };
 
@@ -85,6 +88,18 @@ fn main() -> Result<()> {
     let description = match profile.provider {
         Provider::Ollama(config) => {
             let provider = OllamaProvider::from_config(config);
+            provider.make_request(request)
+        }
+        Provider::Anthropic(config) => {
+            let provider = AnthropicProvider::from_config(config);
+            provider.make_request(request)
+        }
+        Provider::OpenAI(config) => {
+            let provider = OpenAIProvider::from_config(config);
+            provider.make_request(request)
+        }
+        Provider::Google(config) => {
+            let provider = GoogleProvider::from_config(config);
             provider.make_request(request)
         }
         _ => todo!(),

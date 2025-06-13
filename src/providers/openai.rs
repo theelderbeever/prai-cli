@@ -1,4 +1,5 @@
 use log::debug;
+use secrecy::ExposeSecret;
 
 use crate::{providers::Provider, settings::OpenAISettings};
 
@@ -51,9 +52,10 @@ impl Provider for OpenAIProvider {
     fn get_client(&self) -> reqwest::blocking::Client {
         let mut headers = reqwest::header::HeaderMap::new();
 
-        if let Ok(auth_header) =
-            reqwest::header::HeaderValue::from_str(&format!("Bearer {}", self.config.api_key))
-        {
+        if let Ok(auth_header) = reqwest::header::HeaderValue::from_str(&format!(
+            "Bearer {}",
+            self.config.api_key.expose_secret()
+        )) {
             headers.insert(reqwest::header::AUTHORIZATION, auth_header);
         }
 

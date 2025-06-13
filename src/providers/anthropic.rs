@@ -1,4 +1,5 @@
 use log::debug;
+use secrecy::ExposeSecret;
 
 use crate::{providers::Provider, settings::AnthropicSettings};
 
@@ -49,7 +50,9 @@ impl Provider for AnthropicProvider {
     fn get_client(&self) -> reqwest::blocking::Client {
         let mut headers = reqwest::header::HeaderMap::new();
 
-        if let Ok(api_key_header) = reqwest::header::HeaderValue::from_str(&self.config.api_key) {
+        if let Ok(api_key_header) =
+            reqwest::header::HeaderValue::from_str(self.config.api_key.expose_secret())
+        {
             headers.insert("x-api-key", api_key_header);
         }
 

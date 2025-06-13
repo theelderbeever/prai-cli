@@ -1,4 +1,5 @@
 use log::debug;
+use secrecy::ExposeSecret;
 
 use crate::{providers::Provider, settings::GoogleSettings};
 
@@ -17,7 +18,9 @@ impl Provider for GoogleProvider {
     fn build_url(&self) -> String {
         format!(
             "{}/models/{}:generateContent?key={}",
-            self.config.base_url, self.config.model, self.config.api_key
+            self.config.base_url,
+            self.config.model,
+            self.config.api_key.expose_secret()
         )
     }
 

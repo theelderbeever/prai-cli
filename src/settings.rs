@@ -2,6 +2,7 @@ use std::path::Path;
 
 use anyhow::{Result, anyhow};
 use config::{ConfigBuilder, FileFormat, builder::DefaultState};
+use secrecy::SecretString;
 use serde::{Deserialize, Serialize};
 
 type DefaultConfigBuilder = ConfigBuilder<DefaultState>;
@@ -37,6 +38,13 @@ impl Settings {
     }
 }
 
+fn serialize_secret<S>(_value: &SecretString, s: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    s.serialize_str("[REDACTED]")
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Profile {
     pub name: String,
@@ -51,7 +59,7 @@ pub struct Profile {
 pub enum Provider {
     Anthropic(AnthropicSettings),
     Ollama(OllamaSettings),
-    Openai(OpenAISettings),
+    OpenAI(OpenAISettings),
     Google(GoogleSettings),
 }
 
@@ -60,7 +68,8 @@ pub struct AnthropicSettings {
     #[serde(default = "AnthropicSettings::default_version")]
     pub version: String,
     pub model: String,
-    pub api_key: String,
+    #[serde(serialize_with = "serialize_secret")]
+    pub api_key: SecretString,
     #[serde(default = "AnthropicSettings::default_max_tokens")]
     pub max_tokens: u32,
     #[serde(default = "AnthropicSettings::default_temperature")]
@@ -121,7 +130,8 @@ impl OllamaSettings {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct OpenAISettings {
     pub model: String,
-    pub api_key: String,
+    #[serde(serialize_with = "serialize_secret")]
+    pub api_key: SecretString,
     #[serde(default = "OpenAISettings::default_base_url")]
     pub base_url: String,
     #[serde(default = "OpenAISettings::default_max_tokens")]
@@ -165,7 +175,8 @@ impl OpenAISettings {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GoogleSettings {
     pub model: String,
-    pub api_key: String,
+    #[serde(serialize_with = "serialize_secret")]
+    pub api_key: SecretString,
     #[serde(default = "GoogleSettings::default_base_url")]
     pub base_url: String,
     #[serde(default = "GoogleSettings::default_max_tokens")]
