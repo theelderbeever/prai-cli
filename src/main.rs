@@ -102,7 +102,6 @@ fn main() -> Result<()> {
             let provider = GoogleProvider::from_config(config);
             provider.make_request(request)
         }
-        _ => todo!(),
     }?;
 
     println!("{}", description);
