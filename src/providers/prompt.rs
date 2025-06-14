@@ -6,14 +6,37 @@ use indoc::indoc;
 pub struct Prompt;
 
 impl Prompt {
-    pub const DEFAULT_ROLE: &str = "You are a senior engineer";
+    pub const DEFAULT_ROLE: &str = indoc! {
+        r#"You are a technical writer creating PR summaries."#
+    };
     pub const DEFAULT_DIRECTIVE: &str = indoc! {
-        r#"Analyze this git diff and create a concise PR description. Focus on:
-        - What changes were made (be specific but brief)
-        - Why these changes matter
-        - Any breaking changes or important notes, assuming there are any. If not, don't mention it.
-        Keep it under 150 words and use bullet points for clarity. Don't include implementation details unless critical.
-        Don't unclude your own thought process. The output should be just the content of the PR summary."#
+        r#"Write a professional summary of the changes made in the diff. Start directly with the summary, no conversational preamble.
+        Use markdown syntax. Mention any breaking changes. Do not write code. Use the following as an example template. Do not check boxes which are not
+        included in the diff.
+
+        START
+        # Pull Request
+
+        ## Summary
+        Brief description of what this PR accomplishes.
+
+        ## Changes Made
+        - List the main changes
+        - Use bullet points for clarity
+        - Be specific about what was modified
+
+        ## Type of Change
+        Feature, Bug, Chore, Docs
+
+
+        ## Breaking Changes
+        List any breaking changes and migration steps if applicable.
+
+        ## Additional Notes
+        Any additional context, considerations, or follow-up items.
+        END
+
+        "#
     };
 
     pub const DEFAULT_TITLE_DIRECTIVE: &str = indoc! {
@@ -39,12 +62,14 @@ impl Prompt {
         };
 
         Ok(format!(
-            indoc! {"[CONTEXT]
-            {diff}
+            indoc! {"
             [ROLE]
             {role}
             [DIRECTIVE]
-            {directive}"},
+            {directive}
+            [DIFF]
+            {diff}
+            "},
             diff = Self::get_git_diff(base, head, exclude)?,
             role = role.unwrap_or(Self::DEFAULT_ROLE),
             directive = directive.unwrap_or(default_directive)
