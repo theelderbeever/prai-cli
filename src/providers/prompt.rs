@@ -11,7 +11,7 @@ impl Prompt {
         r#"Analyze this git diff and create a concise PR description. Focus on:
         - What changes were made (be specific but brief)
         - Why these changes matter
-        - Any breaking changes or important notes
+        - Any breaking changes or important notes, assuming there are any. If not, don't mention it.
         Keep it under 150 words and use bullet points for clarity. Don't include implementation details unless critical.
         Don't unclude your own thought process. The output should be just the content of the PR summary."#
     };
