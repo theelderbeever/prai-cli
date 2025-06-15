@@ -1,7 +1,8 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, time::Duration};
 
 use anyhow::Result;
 use clap::Parser;
+use indicatif::{ProgressBar, ProgressStyle};
 use lazy_static::lazy_static;
 use log::{debug, info};
 
@@ -92,6 +93,24 @@ fn main() -> Result<()> {
         .is_title(args.title)
         .build();
 
+    let pb = ProgressBar::new_spinner();
+    pb.enable_steady_tick(Duration::from_millis(120));
+    pb.set_style(
+        ProgressStyle::with_template("{spinner:.blue} Thinking...")
+            .unwrap()
+            // For more spinners check out the cli-spinners project:
+            // https://github.com/sindresorhus/cli-spinners/blob/master/spinners.json
+            .tick_strings(&[
+                "▹▹▹▹▹",
+                "▸▹▹▹▹",
+                "▹▸▹▹▹",
+                "▹▹▸▹▹",
+                "▹▹▹▸▹",
+                "▹▹▹▹▸",
+                "▪▪▪▪▪",
+            ]),
+    );
+
     let description = match profile.provider {
         Provider::Ollama(config) => {
             let provider = OllamaProvider::from_config(config);
@@ -110,8 +129,8 @@ fn main() -> Result<()> {
             provider.make_request(request)
         }
     }?;
-
-    println!("{}", description);
+    pb.finish_with_message("Done");
+    // println!("{}", description);
 
     Ok(())
 }

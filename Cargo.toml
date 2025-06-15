@@ -20,6 +20,7 @@ serde_json = "1.0"
 dirs = "6.0"
 lazy_static = "1"
 secrecy = { version = "0.10", features = ["serde"] }
+indicatif = { version = "0.17.11", features = ["tokio"] }
 
 [dev-dependencies]
 pretty_assertions = "1.4"
