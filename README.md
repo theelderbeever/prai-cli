@@ -2,6 +2,8 @@
 
 A command-line tool that generates concise pull request descriptions from git diffs using configurable AI providers.
 
+![prai](docs/images/prai.gif)
+
 ## Overview
 
 `prai` analyzes the differences between two git commits and automatically generates a professional PR description highlighting:
