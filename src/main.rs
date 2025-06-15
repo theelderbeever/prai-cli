@@ -5,7 +5,7 @@ use clap::Parser;
 use indicatif::{ProgressBar, ProgressStyle};
 use lazy_static::lazy_static;
 use log::debug;
-use rand::seq::SliceRandom;
+use rand::prelude::IndexedRandom;
 
 use prai::{
     providers::{
@@ -61,6 +61,16 @@ struct Args {
 impl Args {}
 
 fn main() -> Result<()> {
+    let mut rng = rand::rng();
+
+    let pb = ProgressBar::new_spinner();
+    pb.enable_steady_tick(Duration::from_millis(17));
+    pb.set_style(
+        ProgressStyle::with_template("{spinner:.green} {msg}")
+            .unwrap()
+            .tick_strings(PROGRESS),
+    );
+    pb.set_message(*(PHRASES.choose(&mut rng).unwrap()));
     let args = Args::parse();
 
     // Initialize logging based on verbosity level
@@ -80,16 +90,6 @@ fn main() -> Result<()> {
         args.commit1, args.commit2
     );
     debug!("Exclude pattern: {}", args.exclude);
-    let mut rng = rand::rng();
-    let mut phrases = PHRASES.to_vec();
-    phrases.shuffle(&mut rng);
-    let pb = ProgressBar::new_spinner();
-    pb.enable_steady_tick(Duration::from_millis(10000));
-    pb.set_style(
-        ProgressStyle::with_template("{spinner:.white}")
-            .unwrap()
-            .tick_strings(&phrases),
-    );
 
     let settings = Settings::from_path(&args.config)?;
     let profile = settings.get(args.profile.clone())?;
@@ -133,7 +133,7 @@ static PHRASES: &[&str] = &[
     "What if I told you... your code could be self-documenting?",
     "Free your mind from poorly written PRs...",
     "The Matrix has you... but your PR doesn't have to suck...",
-    "What is real? Are your variable names real?",
+    "What is real? Are your variables real?",
     "Do not try and bend the code. That's impossible...",
     "Your mind makes it real... especially your bugs...",
     "Welcome to the desert of the real codebase...",
@@ -148,9 +148,103 @@ static PHRASES: &[&str] = &[
     "I can only show you the door to better architecture...",
     "The Matrix is everywhere... even in your nested if statements...",
     "Have you ever had a dream about perfectly documented APIs?",
-    "What good is a phone call if you're unable to speak... or comment your code?",
     "I know why you're here... you want to understand dependency injection...",
     "Sooner or later you're going to realize there's a difference between knowing the path and walking the path... of clean code...",
     "The pill you took is part of a trace program... for debugging reality...",
     "Welcome to the real world... where code reviews are mandatory...",
+];
+
+static PROGRESS: &[&str] = &[
+    "█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁",
+    "██▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁",
+    "███▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁",
+    "████▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁",
+    "██████▁▁▁▁▁▁▁▁▁▁▁▁▁▁",
+    "██████▁▁▁▁▁▁▁▁▁▁▁▁▁▁",
+    "███████▁▁▁▁▁▁▁▁▁▁▁▁▁",
+    "████████▁▁▁▁▁▁▁▁▁▁▁▁",
+    "█████████▁▁▁▁▁▁▁▁▁▁▁",
+    "█████████▁▁▁▁▁▁▁▁▁▁▁",
+    "██████████▁▁▁▁▁▁▁▁▁▁",
+    "███████████▁▁▁▁▁▁▁▁▁",
+    "█████████████▁▁▁▁▁▁▁",
+    "██████████████▁▁▁▁▁▁",
+    "██████████████▁▁▁▁▁▁",
+    "▁██████████████▁▁▁▁▁",
+    "▁██████████████▁▁▁▁▁",
+    "▁██████████████▁▁▁▁▁",
+    "▁▁██████████████▁▁▁▁",
+    "▁▁▁██████████████▁▁▁",
+    "▁▁▁▁█████████████▁▁▁",
+    "▁▁▁▁██████████████▁▁",
+    "▁▁▁▁██████████████▁▁",
+    "▁▁▁▁▁██████████████▁",
+    "▁▁▁▁▁██████████████▁",
+    "▁▁▁▁▁██████████████▁",
+    "▁▁▁▁▁▁██████████████",
+    "▁▁▁▁▁▁██████████████",
+    "▁▁▁▁▁▁▁█████████████",
+    "▁▁▁▁▁▁▁█████████████",
+    "▁▁▁▁▁▁▁▁████████████",
+    "▁▁▁▁▁▁▁▁████████████",
+    "▁▁▁▁▁▁▁▁▁███████████",
+    "▁▁▁▁▁▁▁▁▁███████████",
+    "▁▁▁▁▁▁▁▁▁▁██████████",
+    "▁▁▁▁▁▁▁▁▁▁██████████",
+    "▁▁▁▁▁▁▁▁▁▁▁▁████████",
+    "▁▁▁▁▁▁▁▁▁▁▁▁▁███████",
+    "▁▁▁▁▁▁▁▁▁▁▁▁▁▁██████",
+    "▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█████",
+    "▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█████",
+    "█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁████",
+    "██▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁███",
+    "██▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁███",
+    "███▁▁▁▁▁▁▁▁▁▁▁▁▁▁███",
+    "████▁▁▁▁▁▁▁▁▁▁▁▁▁▁██",
+    "█████▁▁▁▁▁▁▁▁▁▁▁▁▁▁█",
+    "█████▁▁▁▁▁▁▁▁▁▁▁▁▁▁█",
+    "██████▁▁▁▁▁▁▁▁▁▁▁▁▁█",
+    "████████▁▁▁▁▁▁▁▁▁▁▁▁",
+    "█████████▁▁▁▁▁▁▁▁▁▁▁",
+    "█████████▁▁▁▁▁▁▁▁▁▁▁",
+    "█████████▁▁▁▁▁▁▁▁▁▁▁",
+    "█████████▁▁▁▁▁▁▁▁▁▁▁",
+    "███████████▁▁▁▁▁▁▁▁▁",
+    "████████████▁▁▁▁▁▁▁▁",
+    "████████████▁▁▁▁▁▁▁▁",
+    "██████████████▁▁▁▁▁▁",
+    "██████████████▁▁▁▁▁▁",
+    "▁██████████████▁▁▁▁▁",
+    "▁██████████████▁▁▁▁▁",
+    "▁▁▁█████████████▁▁▁▁",
+    "▁▁▁▁▁████████████▁▁▁",
+    "▁▁▁▁▁████████████▁▁▁",
+    "▁▁▁▁▁▁███████████▁▁▁",
+    "▁▁▁▁▁▁▁▁█████████▁▁▁",
+    "▁▁▁▁▁▁▁▁█████████▁▁▁",
+    "▁▁▁▁▁▁▁▁▁█████████▁▁",
+    "▁▁▁▁▁▁▁▁▁█████████▁▁",
+    "▁▁▁▁▁▁▁▁▁▁█████████▁",
+    "▁▁▁▁▁▁▁▁▁▁▁████████▁",
+    "▁▁▁▁▁▁▁▁▁▁▁████████▁",
+    "▁▁▁▁▁▁▁▁▁▁▁▁███████▁",
+    "▁▁▁▁▁▁▁▁▁▁▁▁███████▁",
+    "▁▁▁▁▁▁▁▁▁▁▁▁▁███████",
+    "▁▁▁▁▁▁▁▁▁▁▁▁▁███████",
+    "▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█████",
+    "▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁████",
+    "▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁████",
+    "▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁████",
+    "▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁███",
+    "▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁███",
+    "▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁██",
+    "▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁██",
+    "▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁██",
+    "▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█",
+    "▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█",
+    "▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█",
+    "▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁",
+    "▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁",
+    "▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁",
+    "▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁",
 ];
