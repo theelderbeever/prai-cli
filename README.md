@@ -18,7 +18,7 @@ Perfect for streamlining your PR workflow and ensuring consistent, informative d
 ### Via Cargo
 
 ```bash
-cargo install prai-cli
+cargo install prai
 ```
 
 ### From Source
