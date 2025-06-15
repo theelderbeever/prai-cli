@@ -2,6 +2,11 @@
 name = "prai"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
+homepage = "https://github.com/theelderbeever/prai-cli"
+repository = "https://github.com/theelderbeever/prai-cli"
+documentation = "https://docs.rs/prai-cli"
+description = "A command-line tool that generates concise pull request descriptions from git diffs using configurable AI providers."
 
 [lib]
 name = "prai"

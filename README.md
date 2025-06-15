@@ -18,15 +18,13 @@ Perfect for streamlining your PR workflow and ensuring consistent, informative d
 ### Via Cargo
 
 ```bash
-cargo install --git https://github.com/theelderbeever/prai-cli.git
+cargo install prai-cli
 ```
 
 ### From Source
 
 ```bash
-git clone https://github.com/theelderbeever/prai-cli.git
-cd prai-cli/prai
-cargo install --path .
+cargo install --git https://github.com/theelderbeever/prai-cli.git
 ```
 
 ## Configuration
@@ -146,7 +144,7 @@ prai main HEAD --config /path/to/custom/config.toml
 ## Requirements
 
 - Git (for generating diffs)
-- Rust 1.70+ (for installation)
+- Rust 1.85+ (for installation)
 - API key for your chosen provider (Anthropic, OpenAI, Google) or Ollama running locally
 
 ## TODO
