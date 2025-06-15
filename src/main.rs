@@ -4,7 +4,8 @@ use anyhow::Result;
 use clap::Parser;
 use indicatif::{ProgressBar, ProgressStyle};
 use lazy_static::lazy_static;
-use log::{debug, info};
+use log::debug;
+use rand::seq::SliceRandom;
 
 use prai::{
     providers::{
@@ -74,12 +75,21 @@ fn main() -> Result<()> {
         .filter_level(log_level)
         .init();
 
-    info!("Starting prai with verbosity level: {}", args.verbose);
     debug!(
         "Using commit1: {}, commit2: {:?}",
         args.commit1, args.commit2
     );
     debug!("Exclude pattern: {}", args.exclude);
+    let mut rng = rand::rng();
+    let mut phrases = PHRASES.to_vec();
+    phrases.shuffle(&mut rng);
+    let pb = ProgressBar::new_spinner();
+    pb.enable_steady_tick(Duration::from_millis(10000));
+    pb.set_style(
+        ProgressStyle::with_template("{spinner:.white}")
+            .unwrap()
+            .tick_strings(&phrases),
+    );
 
     let settings = Settings::from_path(&args.config)?;
     let profile = settings.get(args.profile.clone())?;
@@ -92,24 +102,6 @@ fn main() -> Result<()> {
         .maybe_directive(profile.directive.clone())
         .is_title(args.title)
         .build();
-
-    let pb = ProgressBar::new_spinner();
-    pb.enable_steady_tick(Duration::from_millis(120));
-    pb.set_style(
-        ProgressStyle::with_template("{spinner:.blue} Thinking...")
-            .unwrap()
-            // For more spinners check out the cli-spinners project:
-            // https://github.com/sindresorhus/cli-spinners/blob/master/spinners.json
-            .tick_strings(&[
-                "▹▹▹▹▹",
-                "▸▹▹▹▹",
-                "▹▸▹▹▹",
-                "▹▹▸▹▹",
-                "▹▹▹▸▹",
-                "▹▹▹▹▸",
-                "▪▪▪▪▪",
-            ]),
-    );
 
     let description = match profile.provider {
         Provider::Ollama(config) => {
@@ -129,8 +121,36 @@ fn main() -> Result<()> {
             provider.make_request(request)
         }
     }?;
-    pb.finish_with_message("Done");
-    // println!("{}", description);
+    pb.finish_and_clear();
+    println!("{}", description);
 
     Ok(())
 }
+
+static PHRASES: &[&str] = &[
+    "There is no spoon... only elegant code...",
+    "Questioning the reality of your function names...",
+    "What if I told you... your code could be self-documenting?",
+    "Free your mind from poorly written PRs...",
+    "The Matrix has you... but your PR doesn't have to suck...",
+    "What is real? Are your variable names real?",
+    "Do not try and bend the code. That's impossible...",
+    "Your mind makes it real... especially your bugs...",
+    "Welcome to the desert of the real codebase...",
+    "Everything you know about clean code is a lie...",
+    "The body cannot live without the mind... or proper documentation...",
+    "Choice. The problem is choice... between tabs and spaces...",
+    "What if I told you... most of your code is technical debt?",
+    "You think that's air you're breathing? It's code smell...",
+    "Fate, it seems, is not without a sense of irony... and merge conflicts...",
+    "Unfortunately, no one can be told what clean code is...",
+    "This is your last chance to write good commit messages...",
+    "I can only show you the door to better architecture...",
+    "The Matrix is everywhere... even in your nested if statements...",
+    "Have you ever had a dream about perfectly documented APIs?",
+    "What good is a phone call if you're unable to speak... or comment your code?",
+    "I know why you're here... you want to understand dependency injection...",
+    "Sooner or later you're going to realize there's a difference between knowing the path and walking the path... of clean code...",
+    "The pill you took is part of a trace program... for debugging reality...",
+    "Welcome to the real world... where code reviews are mandatory...",
+];
