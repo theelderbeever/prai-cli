@@ -55,10 +55,10 @@ fn default_pr_template() -> Option<&'static str> {
 #[command(about = "Generate PR descriptions from git diffs using configurable AI providers")]
 struct Args {
     #[arg(default_value = prai::git::get_default_branch())]
-    commit1: String,
+    minus: String,
 
     #[arg(default_value = "HEAD")]
-    commit2: String,
+    plus: String,
 
     #[arg(short, long, default_value = ":!*.lock")]
     exclude: String,
@@ -111,10 +111,7 @@ fn main() -> Result<()> {
         .filter_level(log_level)
         .init();
 
-    debug!(
-        "Using commit1: {}, commit2: {:?}",
-        args.commit1, args.commit2
-    );
+    debug!("Using commit1: {}, commit2: {:?}", args.minus, args.plus);
     debug!("Exclude pattern: {}", args.exclude);
 
     let settings = Settings::from_path(&args.config)?;
@@ -128,9 +125,9 @@ fn main() -> Result<()> {
     });
 
     let request = Request::builder()
-        .base(args.commit1.clone())
+        .base(args.minus.clone())
         .exclude(args.exclude.clone())
-        .head(args.commit2.clone())
+        .head(args.plus.clone())
         .maybe_template(template)
         .maybe_role(profile.role.clone())
         .maybe_directive(profile.directive.clone())
