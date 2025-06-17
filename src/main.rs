@@ -60,6 +60,7 @@ struct Args {
     #[arg(default_value = "HEAD")]
     plus: String,
 
+    /// File patterns to ignore in the git diff
     #[arg(short, long, default_value = ":!*.lock")]
     exclude: String,
 
