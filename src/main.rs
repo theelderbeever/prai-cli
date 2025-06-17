@@ -37,9 +37,7 @@ fn default_pr_template() -> Option<&'static str> {
                 .filter_map(Result::ok)
                 .filter(|e| !e.file_type().is_dir())
             {
-                let f_name = String::from(entry.file_name().to_string_lossy());
-
-                if f_name.eq("pull_request_template.md") {
+                if entry.file_name().eq("pull_request_template.md") {
                     path = entry.path().to_str().map(String::from);
                     break;
                 }
