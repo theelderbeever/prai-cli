@@ -34,5 +34,4 @@ Which steps did you take to test this change? (check at least one/all that apply
 
 * [ ] Wrote unit tests
 * [ ] Tested manually in development
-* [ ] Tested manually in Heroku review app/staging
 * [ ] Other (specify)
