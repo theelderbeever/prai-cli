@@ -13,6 +13,7 @@ pub struct Request {
     pub base: String,
     pub head: String,
     pub exclude: String,
+    pub template: Option<String>,
     pub role: Option<String>,
     pub directive: Option<String>,
     pub is_title: bool,
@@ -31,6 +32,7 @@ pub trait Provider {
             request.exclude.as_str(),
             request.role.as_deref(),
             request.directive.as_deref(),
+            request.template.as_deref(),
             request.is_title,
         )?;
         trace!("Prompt:\n{prompt}");

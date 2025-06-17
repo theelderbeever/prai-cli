@@ -1,4 +1,4 @@
-use std::{path::PathBuf, time::Duration};
+use std::{fs::File, io::Read, path::PathBuf, time::Duration};
 
 use anyhow::Result;
 use clap::Parser;
@@ -28,6 +28,28 @@ fn default_config_string() -> &'static str {
     &DEFAULT_PATH_STR
 }
 
+fn default_pr_template() -> Option<&'static str> {
+    lazy_static! {
+        static ref DEFAULT_PATH_STR: Option<String> = {
+            let mut path = None;
+            for entry in walkdir::WalkDir::new("./.github")
+                .into_iter()
+                .filter_map(Result::ok)
+                .filter(|e| !e.file_type().is_dir())
+            {
+                let f_name = String::from(entry.file_name().to_string_lossy());
+
+                if f_name.eq("pull_request_template.md") {
+                    path = entry.path().to_str().map(String::from);
+                    break;
+                }
+            }
+            path
+        };
+    }
+    DEFAULT_PATH_STR.as_deref()
+}
+
 #[derive(Parser)]
 #[command(name = "prai")]
 #[command(about = "Generate PR descriptions from git diffs using configurable AI providers")]
@@ -49,6 +71,10 @@ struct Args {
     #[arg(short = 'f', long = "config", global = true, default_value = default_config_string())]
     config: PathBuf,
 
+    /// Path to pull request template to use in summary
+    #[arg(short, long, global = true, default_value = default_pr_template())]
+    template: Option<PathBuf>,
+
     /// Generate a PR title instead of description
     #[arg(short = 'T', long)]
     title: bool,
@@ -61,6 +87,7 @@ struct Args {
 impl Args {}
 
 fn main() -> Result<()> {
+    let args = Args::parse();
     let mut rng = rand::rng();
 
     let pb = ProgressBar::new_spinner();
@@ -71,7 +98,6 @@ fn main() -> Result<()> {
             .tick_strings(PROGRESS),
     );
     pb.set_message(*(PHRASES.choose(&mut rng).unwrap()));
-    let args = Args::parse();
 
     // Initialize logging based on verbosity level
     let log_level = match args.verbose {
@@ -94,10 +120,18 @@ fn main() -> Result<()> {
     let settings = Settings::from_path(&args.config)?;
     let profile = settings.get(args.profile.clone())?;
 
+    let template = args.template.and_then(|p| {
+        let mut content = String::new();
+        let mut f = File::open(p).ok()?;
+        f.read_to_string(&mut content).ok()?;
+        Some(content)
+    });
+
     let request = Request::builder()
         .base(args.commit1.clone())
         .exclude(args.exclude.clone())
         .head(args.commit2.clone())
+        .maybe_template(template)
         .maybe_role(profile.role.clone())
         .maybe_directive(profile.directive.clone())
         .is_title(args.title)

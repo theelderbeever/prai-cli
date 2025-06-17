@@ -9,15 +9,8 @@ impl Prompt {
     pub const DEFAULT_ROLE: &str = indoc! {
         r#"You are a technical writer creating PR summaries."#
     };
-    pub const DEFAULT_DIRECTIVE: &str = indoc! {
-        r#"Write a professional summary of the changes made in the diff. Start directly with the summary, no conversational preamble.
-        Use markdown syntax. Mention any breaking changes. Do not write code. Use the following as an example template. Do not check boxes which are not
-        included in the diff.
-
-        START
-        # Pull Request
-
-        ## Summary
+    pub const DEFAULT_TEMPLATE: &str = indoc! {
+        r#"# Summary
         Brief description of what this PR accomplishes.
 
         ## Changes Made
@@ -33,10 +26,13 @@ impl Prompt {
         List any breaking changes and migration steps if applicable.
 
         ## Additional Notes
-        Any additional context, considerations, or follow-up items.
-        END
+        Any additional context, considerations, or follow-up items."#
 
-        "#
+    };
+    pub const DEFAULT_DIRECTIVE: &str = indoc! {
+        r#"Write a professional summary of the changes made in the diff. Start directly with the summary, no conversational preamble.
+        Use markdown syntax. Mention any breaking changes. Do not write code. Use the following as an example template. Do not check boxes which are not
+        included in the diff."#
     };
 
     pub const DEFAULT_TITLE_DIRECTIVE: &str = indoc! {
@@ -53,6 +49,7 @@ impl Prompt {
         exclude: &str,
         role: Option<&str>,
         directive: Option<&str>,
+        template: Option<&str>,
         is_title: bool,
     ) -> Result<String> {
         let default_directive = if is_title {
@@ -67,12 +64,15 @@ impl Prompt {
             {role}
             [DIRECTIVE]
             {directive}
+            [PULL_REQUEST_TEMPLATE]
+            {template}
             [DIFF]
             {diff}
             "},
             diff = Self::get_git_diff(base, head, exclude)?,
             role = role.unwrap_or(Self::DEFAULT_ROLE),
-            directive = directive.unwrap_or(default_directive)
+            directive = directive.unwrap_or(default_directive),
+            template = template.unwrap_or(Self::DEFAULT_TEMPLATE)
         ))
     }
 
@@ -108,7 +108,7 @@ mod tests {
 
     #[test]
     fn test_prompt() {
-        let prompt = Prompt::render("683ddd6", "d2bbcc5", ":!*.lock", None, None, false)
+        let prompt = Prompt::render("683ddd6", "d2bbcc5", ":!*.lock", None, None, None, false)
             .unwrap()
             .replace(" \n", "\n");
 
