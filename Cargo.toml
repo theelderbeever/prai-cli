@@ -1,6 +1,6 @@
 [package]
 name = "prai"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 license = "MIT"
 homepage = "https://github.com/theelderbeever/prai-cli"
@@ -27,6 +27,7 @@ lazy_static = "1"
 secrecy = { version = "0.10", features = ["serde"] }
 indicatif = { version = "0.17.11", features = ["tokio"] }
 rand = "0.9.1"
+walkdir = "2.5.0"
 
 [dev-dependencies]
 pretty_assertions = "1.4"
