@@ -60,7 +60,7 @@ struct Args {
 
     /// File patterns to ignore in the git diff
     #[arg(short, long, default_value = ":!*.lock")]
-    exclude: String,
+    exclude: Vec<String>,
 
     /// The provider profile to use for generation. Will default to the value in the config default.
     #[arg(short, long, global = true)]
@@ -111,7 +111,7 @@ fn main() -> Result<()> {
         .init();
 
     debug!("Using commit1: {}, commit2: {:?}", args.minus, args.plus);
-    debug!("Exclude pattern: {}", args.exclude);
+    debug!("Exclude pattern: {:?}", args.exclude);
 
     let settings = Settings::from_path(&args.config)?;
     let profile = settings.get(args.profile.clone())?;

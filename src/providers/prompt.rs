@@ -46,7 +46,7 @@ impl Prompt {
     pub fn render(
         base: &str,
         head: &str,
-        exclude: &str,
+        exclude: &[&str],
         role: Option<&str>,
         directive: Option<&str>,
         template: Option<&str>,
@@ -76,12 +76,12 @@ impl Prompt {
         ))
     }
 
-    fn get_git_diff(base: &str, head: &str, exclude: &str) -> Result<String> {
+    fn get_git_diff(base: &str, head: &str, exclude: &[&str]) -> Result<String> {
         let mut cmd = Command::new("git");
 
         cmd.arg("diff").arg(base).arg(head);
 
-        let output = cmd.args(["--", exclude]).output()?;
+        let output = cmd.args(["--", &exclude.join(" ")]).output()?;
 
         if !output.status.success() {
             let error = String::from_utf8_lossy(&output.stderr);
@@ -108,7 +108,7 @@ mod tests {
 
     #[test]
     fn test_prompt() {
-        let prompt = Prompt::render("683ddd6", "d2bbcc5", ":!*.lock", None, None, None, false)
+        let prompt = Prompt::render("683ddd6", "d2bbcc5", &[":!*.lock"], None, None, None, false)
             .unwrap()
             .replace(" \n", "\n");
 
