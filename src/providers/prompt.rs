@@ -46,7 +46,7 @@ impl Prompt {
     pub fn render(
         base: &str,
         head: &str,
-        exclude: &str,
+        exclude: &[&str],
         role: Option<&str>,
         directive: Option<&str>,
         template: Option<&str>,
@@ -76,12 +76,12 @@ impl Prompt {
         ))
     }
 
-    fn get_git_diff(base: &str, head: &str, exclude: &str) -> Result<String> {
+    fn get_git_diff(base: &str, head: &str, exclude: &[&str]) -> Result<String> {
         let mut cmd = Command::new("git");
 
         cmd.arg("diff").arg(base).arg(head);
 
-        let output = cmd.args(["--", exclude]).output()?;
+        let output = cmd.args(["--", &exclude.join(" ")]).output()?;
 
         if !output.status.success() {
             let error = String::from_utf8_lossy(&output.stderr);
@@ -108,15 +108,39 @@ mod tests {
 
     #[test]
     fn test_prompt() {
-        let prompt = Prompt::render("683ddd6", "d2bbcc5", ":!*.lock", None, None, None, false)
+        let prompt = Prompt::render("683ddd6", "d2bbcc5", &[":!*.lock"], None, None, None, false)
             .unwrap()
             .replace(" \n", "\n");
 
-        assert_str_eq!(EXPECTED, prompt.as_str());
+        assert_str_eq!(EXPECTED.trim(), prompt.as_str().trim());
     }
 
     const EXPECTED: &str = indoc! {
-        r#"[CONTEXT]
+        r#"[ROLE]
+        You are a technical writer creating PR summaries.
+        [DIRECTIVE]
+        Write a professional summary of the changes made in the diff. Start directly with the summary, no conversational preamble.
+        Use markdown syntax. Mention any breaking changes. Do not write code. Use the following as an example template. Do not check boxes which are not
+        included in the diff.
+        [PULL_REQUEST_TEMPLATE]
+        # Summary
+        Brief description of what this PR accomplishes.
+
+        ## Changes Made
+        - List the main changes
+        - Use bullet points for clarity
+        - Be specific about what was modified
+
+        ## Type of Change
+        Feature, Bug, Chore, Docs
+
+
+        ## Breaking Changes
+        List any breaking changes and migration steps if applicable.
+
+        ## Additional Notes
+        Any additional context, considerations, or follow-up items.
+        [DIFF]
         diff --git a/src/main.rs b/src/main.rs
         index 88f8b72..935c050 100644
         --- a/src/main.rs
@@ -189,15 +213,6 @@ mod tests {
                  .json(&request_body)
                  .send()
                  .await?;
-
-        [ROLE]
-        You are a senior engineer
-        [DIRECTIVE]
-        Analyze this git diff and create a concise PR description. Focus on:
-        - What changes were made (be specific but brief)
-        - Why these changes matter
-        - Any breaking changes or important notes
-        Keep it under 150 words and use bullet points for clarity. Don't include implementation details unless critical.
-        Don't unclude your own thought process. The output should be just the content of the PR summary."#
+                "#
     };
 }

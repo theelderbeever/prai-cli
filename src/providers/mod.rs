@@ -12,7 +12,7 @@ use log::trace;
 pub struct Request {
     pub base: String,
     pub head: String,
-    pub exclude: String,
+    pub exclude: Vec<String>,
     pub template: Option<String>,
     pub role: Option<String>,
     pub directive: Option<String>,
@@ -26,10 +26,11 @@ pub trait Provider {
 
     /// Build the prompt from the request parameters
     fn build_prompt(&self, request: &Request) -> Result<String> {
+        let exclusions: Vec<&str> = request.exclude.iter().map(|s| s.as_str()).collect();
         let prompt = prompt::Prompt::render(
             request.base.as_str(),
             request.head.as_str(),
-            request.exclude.as_str(),
+            &exclusions,
             request.role.as_deref(),
             request.directive.as_deref(),
             request.template.as_deref(),
