@@ -152,7 +152,7 @@ fn main() -> Result<()> {
         }
     }?;
     pb.finish_and_clear();
-    println!("{}", description);
+    println!("{description}");
 
     Ok(())
 }

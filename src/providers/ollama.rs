@@ -9,7 +9,7 @@ pub struct OllamaProvider {
 impl Provider for OllamaProvider {
     type Config = OllamaSettings;
     fn from_config(config: Self::Config) -> Self {
-        debug!("Create provider from {:?}", config);
+        debug!("Create provider from {config:?}");
         Self { config }
     }
     fn build_url(&self) -> String {

@@ -11,7 +11,7 @@ impl Provider for OpenAIProvider {
     type Config = OpenAISettings;
 
     fn from_config(config: Self::Config) -> Self {
-        debug!("Create OpenAI provider from {:?}", config);
+        debug!("Create OpenAI provider from {config:?}");
         Self { config }
     }
 

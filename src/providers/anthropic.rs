@@ -1,5 +1,6 @@
 use log::debug;
 use secrecy::ExposeSecret;
+use serde::{Deserialize, Serialize};
 
 use crate::{providers::Provider, settings::AnthropicSettings};
 
@@ -11,7 +12,7 @@ impl Provider for AnthropicProvider {
     type Config = AnthropicSettings;
 
     fn from_config(config: Self::Config) -> Self {
-        debug!("Create Anthropic provider from {:?}", config);
+        debug!("Create Anthropic provider from {config:?}");
         Self { config }
     }
 
@@ -20,18 +21,10 @@ impl Provider for AnthropicProvider {
     }
 
     fn build_request_body(&self, prompt: &str) -> anyhow::Result<serde_json::Value> {
-        Ok(serde_json::json!({
-            "model": self.config.model,
-            "max_tokens": self.config.max_tokens,
-            "temperature": self.config.temperature,
-            "top_p": self.config.top_p,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ]
-        }))
+        Ok(serde_json::to_value(Payload::from_settings_and_prompt(
+            prompt.to_string(),
+            self.config.clone(),
+        ))?)
     }
 
     fn parse_response(&self, response: serde_json::Value) -> anyhow::Result<String> {
@@ -70,4 +63,42 @@ impl Provider for AnthropicProvider {
             .build()
             .unwrap_or_else(|_| reqwest::blocking::Client::new())
     }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Payload {
+    pub model: String,
+    pub max_tokens: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub temperature: Option<f32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub top_p: Option<f32>,
+    pub messages: Vec<Message>,
+}
+
+impl Payload {
+    pub fn from_settings_and_prompt(prompt: String, settings: AnthropicSettings) -> Self {
+        Self {
+            model: settings.model,
+            max_tokens: settings.max_tokens,
+            temperature: settings.temperature,
+            top_p: settings.top_p,
+            messages: vec![Message {
+                role: Role::User,
+                content: prompt,
+            }],
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Message {
+    pub role: Role,
+    pub content: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Role {
+    User,
 }

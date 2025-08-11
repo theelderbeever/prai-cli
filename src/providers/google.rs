@@ -11,7 +11,7 @@ impl Provider for GoogleProvider {
     type Config = GoogleSettings;
 
     fn from_config(config: Self::Config) -> Self {
-        debug!("Create Google provider from {:?}", config);
+        debug!("Create Google provider from {config:?}");
         Self { config }
     }
 
