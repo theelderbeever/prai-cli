@@ -63,10 +63,7 @@ pub trait Provider {
         if !response.status().is_success() {
             let status = response.status();
             log::error!("{}", response.text()?);
-            return Err(anyhow::anyhow!(
-                "API request failed with status: {}",
-                status
-            ));
+            return Err(anyhow::anyhow!("API request failed with status: {status}",));
         }
 
         Ok(response.json()?)
