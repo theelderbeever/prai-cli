@@ -57,12 +57,15 @@ pub trait Provider {
     /// Make the HTTP request (default implementation)
     fn make_http_request(&self, url: &str, body: &serde_json::Value) -> Result<serde_json::Value> {
         let client = self.get_client();
+        log::debug!("{body:?}");
         let response = client.post(url).json(body).send()?;
 
         if !response.status().is_success() {
+            let status = response.status();
+            log::error!("{}", response.text()?);
             return Err(anyhow::anyhow!(
                 "API request failed with status: {}",
-                response.status()
+                status
             ));
         }
 
@@ -71,7 +74,7 @@ pub trait Provider {
 
     /// Main request method with default implementation using the other trait methods
     fn make_request(&self, request: Request) -> Result<String> {
-        trace!("{:?}", request);
+        trace!("{request:?}");
 
         let prompt = self.build_prompt(&request)?;
         let url = self.build_url();

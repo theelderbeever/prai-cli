@@ -38,7 +38,7 @@ impl Settings {
     }
 }
 
-fn serialize_secret<S>(_value: &SecretString, s: S) -> Result<S::Ok, S::Error>
+pub fn serialize_secret<S>(_value: &SecretString, s: S) -> Result<S::Ok, S::Error>
 where
     S: serde::Serializer,
 {
@@ -63,7 +63,7 @@ pub enum Provider {
     Google(GoogleSettings),
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct AnthropicSettings {
     #[serde(default = "AnthropicSettings::default_version")]
     pub version: String,
@@ -72,10 +72,10 @@ pub struct AnthropicSettings {
     pub api_key: SecretString,
     #[serde(default = "AnthropicSettings::default_max_tokens")]
     pub max_tokens: u32,
-    #[serde(default = "AnthropicSettings::default_temperature")]
-    pub temperature: f32,
-    #[serde(default = "AnthropicSettings::default_top_p")]
-    pub top_p: f32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub temperature: Option<f32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub top_p: Option<f32>,
 }
 
 impl AnthropicSettings {
@@ -85,14 +85,6 @@ impl AnthropicSettings {
 
     fn default_max_tokens() -> u32 {
         500
-    }
-
-    fn default_temperature() -> f32 {
-        0.3
-    }
-
-    fn default_top_p() -> f32 {
-        0.9
     }
 }
 
